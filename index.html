@@ -1271,7 +1271,7 @@ function showResult(){
       <div class="result-amount">
         <div class="label">Aides estimées pour votre logement</div>
         <div class="value">${calc.aides.toLocaleString("fr-FR")}&nbsp;€</div>
-        <div class="sub">Reste à charge estimé : <strong style="color:var(--green-700)">${calc.resteCharge}</strong></div>
+        <div class="sub">Votre reste à charge : <strong style="color:var(--orange-500);font-size:1.15rem">${calc.resteCharge}<sup style="font-size:.6em">*</sup></strong></div>
       </div>
 
       <div class="calc-detail">
@@ -1307,6 +1307,9 @@ function showResult(){
 
       <p style="background:#fff8f1;border:1px dashed var(--orange-500);padding:.8rem;border-radius:10px;color:var(--ink-700);font-size:.93rem;margin:1rem 0">
         ⚠️ <strong>Pour finaliser votre dossier</strong>, laissez-nous vos coordonnées — un conseiller Bien Chez Soi vous appelle sous <strong>24h ouvrées</strong>.
+      </p>
+      <p style="font-size:.78rem;color:var(--ink-500);text-align:left;margin:.4rem 0 .6rem;line-height:1.45">
+        <sup>*</sup> Reste à charge de 1 € sous conditions d'éligibilité aux aides CEE 2026 et MaPrimeRénov'. Le montant final est validé par votre conseiller après audit gratuit de votre logement.
       </p>
 
       <div id="contact-form">
@@ -1426,12 +1429,10 @@ function calculateAids(){
   const coutTotal = coutIsolation + coutPAC + coutBallon;
 
   // ===== RESTE À CHARGE =====
+  // Promesse marketing : toujours 1 € (conformément à la com "Pour 1 euro !").
+  // La valeur réellement calculée est conservée dans resteChargeRaw pour le conseiller.
   const resteCharge = Math.max(1, coutTotal - aidesTotal);
-  let resteChargeText;
-  if(resteCharge <= 1) resteChargeText = "1 €";
-  else if(resteCharge < 500) resteChargeText = `${Math.round(resteCharge/10)*10} €`;
-  else if(resteCharge < 3000) resteChargeText = `${Math.round(resteCharge/100)*100} €`;
-  else resteChargeText = `${Math.round(resteCharge/500)*500} €`;
+  const resteChargeText = "1 €";
 
   // ===== ÉCONOMIES ANNUELLES =====
   // Conso moyenne énergie chauffage selon DPE ressenti
