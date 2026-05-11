@@ -136,28 +136,74 @@ a:hover{text-decoration:underline}
 .hero-reass div{display:flex;align-items:center;gap:.45rem}
 .hero-reass svg{width:18px;height:18px;color:var(--green-600);flex-shrink:0}
 
-.hero-card{
+/* ===== Hero inline form ===== */
+.hero-form{
   position:relative;
   background:#fff;border:1px solid var(--line);
   border-radius:var(--radius-lg);
-  padding:1.6rem;box-shadow:var(--shadow-lg);
+  padding:1.6rem 1.5rem 1.4rem;
+  box-shadow:var(--shadow-lg);
+  overflow:visible;
 }
-.hero-card::before{
-  content:"";position:absolute;top:-14px;left:24px;
-  background:var(--orange-500);color:#fff;
-  padding:.35rem .8rem;border-radius:var(--radius-pill);
-  font-weight:800;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;
-  content:"✓ ÉLIGIBILITÉ EN 30 SECONDES";
-  box-shadow:var(--shadow-orange);
+.hero-form::before{
+  content:"";position:absolute;inset:-2px;border-radius:calc(var(--radius-lg) + 2px);
+  background:linear-gradient(135deg,var(--orange-500),var(--green-600));
+  z-index:-1;opacity:.7;
 }
-.hero-card h3{font-size:1.3rem;margin-bottom:.4rem;margin-top:.25rem}
-.hero-card-list{list-style:none;padding:0;margin:1.1rem 0 1.4rem;display:grid;gap:.55rem}
-.hero-card-list li{display:flex;align-items:center;gap:.6rem;color:var(--ink-700);font-size:.97rem}
-.hero-card-list svg{width:20px;height:20px;color:var(--green-600);flex-shrink:0}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:1.1rem;padding-top:1.1rem;border-top:1px dashed var(--line)}
-.hero-stat{text-align:center}
-.hero-stat-num{font-weight:800;font-size:1.35rem;color:var(--green-700);line-height:1}
-.hero-stat-lbl{font-size:.75rem;color:var(--ink-500);margin-top:.3rem;line-height:1.2}
+.hero-form-head{margin-bottom:1.1rem}
+.hero-form-pill{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--green-100);color:var(--green-900);
+  padding:.4rem .85rem;border-radius:var(--radius-pill);
+  font-weight:800;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:.7rem;
+}
+.live-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--green-600);
+  box-shadow:0 0 0 0 rgba(58,168,90,.7);
+  animation:pulse 1.6s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(58,168,90,.7)}
+  70%{box-shadow:0 0 0 8px rgba(58,168,90,0)}
+  100%{box-shadow:0 0 0 0 rgba(58,168,90,0)}
+}
+.hero-form-title{font-size:1.35rem;line-height:1.2;margin-bottom:.4rem}
+.hero-form-sub{margin:0;color:var(--ink-500);font-size:.92rem;line-height:1.45}
+
+.hero-form-q-num{
+  font-size:.78rem;font-weight:700;color:var(--green-700);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;
+}
+.hero-form-q-label{
+  font-weight:700;font-size:1.02rem;color:var(--ink-900);
+  margin:0 0 .8rem;line-height:1.3;
+}
+.hero-form-choices{display:grid;gap:.55rem;margin-bottom:1rem}
+.hero-choice{
+  display:flex;align-items:center;gap:.85rem;
+  width:100%;background:#fff;
+  border:1.5px solid var(--line);border-radius:14px;
+  padding:.95rem 1.05rem;cursor:pointer;
+  font-family:inherit;font-size:1rem;font-weight:600;color:var(--ink-900);
+  transition:all .15s ease;text-align:left;
+}
+.hero-choice:hover{
+  border-color:var(--green-600);background:var(--green-50);
+  transform:translateX(2px);
+}
+.hero-choice .choice-label{flex:1}
+.hero-choice .choice-emoji{font-size:1.5rem;line-height:1}
+.hero-choice .choice-arrow{color:var(--ink-300);transition:color .15s,transform .15s}
+.hero-choice:hover .choice-arrow{color:var(--green-700);transform:translateX(3px)}
+
+.hero-form-trust{
+  display:flex;flex-wrap:wrap;gap:.5rem 1rem;
+  padding-top:.9rem;border-top:1px dashed var(--line);
+  font-size:.83rem;color:var(--ink-500);font-weight:600;
+}
+.hero-form-trust div{display:flex;align-items:center;gap:.3rem}
+.hero-form-trust svg{width:14px;height:14px;color:var(--green-600);flex-shrink:0}
 
 /* ===== Trust bar ===== */
 .trust{padding:1.6rem 0;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -496,28 +542,39 @@ input[type=range]{width:100%;accent-color:var(--green-600);height:6px}
       </div>
     </div>
 
-    <aside class="hero-card" aria-label="Vos avantages">
-      <h3>Ce qui vous attend</h3>
-      <p class="muted" style="margin:0;font-size:.94rem">Une étude gratuite de votre logement et le montage complet de votre dossier d'aides CEE.</p>
-      <ul class="hero-card-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Audit énergétique offert à domicile</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Isolation des combles dès 1&nbsp;€</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pompe à chaleur air/eau financée</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Conseiller dédié et travaux clés en main</li>
-      </ul>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="hero-stat-num">0&nbsp;€</div>
-          <div class="hero-stat-lbl">Reste à charge possible</div>
+    <aside class="hero-form" aria-label="Test d'éligibilité gratuit">
+      <div class="hero-form-head">
+        <span class="hero-form-pill">
+          <span class="live-dot"></span> Test gratuit · 30 secondes
+        </span>
+        <h3 class="hero-form-title">Commencez votre test d'éligibilité</h3>
+        <p class="hero-form-sub">Aucune coordonnée demandée à ce stade. Découvrez en 30 sec votre montant d'aides estimé.</p>
+      </div>
+      <div class="hero-form-q">
+        <div class="hero-form-q-num">Question 1 / 9</div>
+        <p class="hero-form-q-label">Quel est votre type de logement&nbsp;?</p>
+        <div class="hero-form-choices">
+          <button class="hero-choice" type="button" data-quick="maison">
+            <span class="choice-emoji">🏠</span>
+            <span class="choice-label">Maison individuelle</span>
+            <span class="choice-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </button>
+          <button class="hero-choice" type="button" data-quick="mitoyenne">
+            <span class="choice-emoji">🏘️</span>
+            <span class="choice-label">Maison mitoyenne</span>
+            <span class="choice-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </button>
+          <button class="hero-choice" type="button" data-quick="appartement">
+            <span class="choice-emoji">🏢</span>
+            <span class="choice-label">Appartement</span>
+            <span class="choice-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </button>
         </div>
-        <div class="hero-stat">
-          <div class="hero-stat-num">−70%</div>
-          <div class="hero-stat-lbl">Sur votre eau chaude</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-num">+4</div>
-          <div class="hero-stat-lbl">Classes DPE gagnées</div>
-        </div>
+      </div>
+      <div class="hero-form-trust">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>100 % gratuit</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sans engagement</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Données protégées</div>
       </div>
     </aside>
   </div>
@@ -905,21 +962,30 @@ const progressBar = document.getElementById("progress-bar");
 
 // Ouverture / fermeture
 document.querySelectorAll(".open-form-btn").forEach(b=>{
-  b.addEventListener("click", openForm);
+  b.addEventListener("click", ()=>openForm());
+});
+// Choix inline dans le hero : pré-remplit et ouvre le modal à l'étape 2
+document.querySelectorAll(".hero-choice").forEach(b=>{
+  b.addEventListener("click", ()=>openForm({type_logement:b.dataset.quick, _entry:"hero_inline"}));
 });
 modal.addEventListener("click", e=>{ if(e.target===modal) closeForm(); });
 document.querySelector(".modal-close").addEventListener("click", closeForm);
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && modal.classList.contains("open")) closeForm(); });
 
-function openForm(){
+function openForm(prefill){
   Object.keys(formData).forEach(k=>delete formData[k]);
-  currentStep = 0;
-  stepsHistory = [];
+  if(prefill && typeof prefill === "object"){
+    Object.assign(formData, prefill);
+  }
+  // Si une réponse est déjà fournie pour l'étape 0, on saute à l'étape 1
+  const startStep = (prefill && prefill.type_logement) ? 1 : 0;
+  currentStep = startStep;
+  stepsHistory = startStep>0 ? [0] : [];
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
-  renderStep(0);
+  renderStep(startStep);
   // tracking — placeholder
-  try{ window.dataLayer && window.dataLayer.push({event:"form_open"}); }catch(_){}
+  try{ window.dataLayer && window.dataLayer.push({event:"form_open", entry:formData._entry||"button"}); }catch(_){}
 }
 function closeForm(){
   modal.classList.remove("open");
