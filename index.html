@@ -425,6 +425,30 @@ input[type=range]{width:100%;accent-color:var(--green-600);height:6px}
 .result-bullets li{padding:.4rem 0;display:flex;align-items:center;gap:.6rem;color:var(--ink-700)}
 .result-bullets svg{width:20px;height:20px;color:var(--green-600);flex-shrink:0}
 
+.calc-detail{
+  background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:1rem 1.2rem;margin:1.2rem 0;text-align:left;
+  box-shadow:var(--shadow-sm);
+}
+.calc-detail-title{
+  font-size:.82rem;font-weight:700;color:var(--ink-500);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:.7rem;
+  padding-bottom:.6rem;border-bottom:1px solid var(--line);
+}
+.calc-detail-title small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink-300);font-size:.75rem;margin-top:.2rem}
+.calc-row{display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.55rem 0;font-size:.95rem}
+.calc-row + .calc-row{border-top:1px dashed var(--line)}
+.calc-row-lbl{color:var(--ink-700);display:flex;align-items:center;gap:.5rem;flex:1}
+.calc-row-lbl small{color:var(--ink-300);font-weight:500;font-size:.78rem}
+.calc-emoji{font-size:1.1rem;line-height:1}
+.calc-row-val{font-weight:700;color:var(--green-700);white-space:nowrap}
+.calc-row-total{margin-top:.4rem;padding-top:.8rem;border-top:2px solid var(--green-100) !important;font-weight:800}
+.calc-row-total .calc-row-lbl{color:var(--ink-900);font-weight:800}
+.calc-row-total .calc-row-val{font-size:1.1rem}
+.calc-row-cost{opacity:.65}
+.calc-row-cost .calc-row-val{color:var(--ink-500);font-weight:600}
+.calc-row-val.strike{text-decoration:line-through}
+
 .not-eligible{text-align:center;padding:1rem 0}
 .not-eligible h3{color:var(--ink-900);margin-bottom:.8rem}
 .not-eligible p{color:var(--ink-500)}
@@ -1159,25 +1183,60 @@ function renderLoadingAndResult(){
 
 function showResult(){
   setProgress(100);
-  const estimate = estimateAids();
+  const calc = calculateAids();
+  // Stocke le calcul dans formData pour transmission au CRM
+  formData.calc_aides_total      = calc.aides;
+  formData.calc_aide_isolation   = calc.detail.isolation;
+  formData.calc_aide_pac         = calc.detail.pac;
+  formData.calc_aide_ballon      = calc.detail.ballon;
+  formData.calc_cout_total       = calc.cout;
+  formData.calc_reste_charge     = calc.resteChargeRaw;
+  formData.calc_economies_an     = calc.economies;
+  formData.calc_facture_actuelle = calc.factureActuelle;
+
   modalBody.innerHTML = `
     <div class="result-success">
       <div class="result-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <h2 class="step-title">Excellente nouvelle&nbsp;!</h2>
-      <p style="color:var(--ink-700);margin-bottom:0">Selon votre profil, vous êtes <strong>éligible</strong> aux aides CEE 2026.</p>
+      <p style="color:var(--ink-700);margin-bottom:0">Selon votre profil, vous êtes <strong>éligible</strong> aux aides CEE 2026 — zone <strong>${calc.zone}</strong>.</p>
 
       <div class="result-amount">
-        <div class="label">Aides CEE estimées</div>
-        <div class="value">Jusqu'à ${estimate.aids.toLocaleString("fr-FR")}&nbsp;€</div>
-        <div class="sub">Reste à charge estimé : <strong>${estimate.remaining}</strong></div>
+        <div class="label">Aides estimées pour votre logement</div>
+        <div class="value">${calc.aides.toLocaleString("fr-FR")}&nbsp;€</div>
+        <div class="sub">Reste à charge estimé : <strong style="color:var(--green-700)">${calc.resteCharge}</strong></div>
+      </div>
+
+      <div class="calc-detail">
+        <div class="calc-detail-title">Détail des aides cumulées <small>(CEE 2026 + MaPrimeRénov' + Coup de pouce)</small></div>
+        <div class="calc-row">
+          <div class="calc-row-lbl"><span class="calc-emoji">🏠</span> Isolation des combles <small>(${calc.surfaceCombles} m²)</small></div>
+          <div class="calc-row-val">${calc.detail.isolation.toLocaleString("fr-FR")}&nbsp;€</div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-row-lbl"><span class="calc-emoji">♨️</span> Pompe à chaleur air/eau</div>
+          <div class="calc-row-val">${calc.detail.pac.toLocaleString("fr-FR")}&nbsp;€</div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-row-lbl"><span class="calc-emoji">💧</span> Ballon thermodynamique</div>
+          <div class="calc-row-val">${calc.detail.ballon.toLocaleString("fr-FR")}&nbsp;€</div>
+        </div>
+        <div class="calc-row calc-row-total">
+          <div class="calc-row-lbl">Total des aides</div>
+          <div class="calc-row-val">${calc.aides.toLocaleString("fr-FR")}&nbsp;€</div>
+        </div>
+        <div class="calc-row calc-row-cost">
+          <div class="calc-row-lbl">Coût des travaux <small>(estimation marché)</small></div>
+          <div class="calc-row-val strike">${calc.cout.toLocaleString("fr-FR")}&nbsp;€</div>
+        </div>
       </div>
 
       <ul class="result-bullets">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Économies estimées : ~ ${estimate.savings.toLocaleString("fr-FR")}&nbsp;€/an</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Facture chauffage actuelle estimée : ~ ${calc.factureActuelle.toLocaleString("fr-FR")}&nbsp;€/an</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Économies estimées après travaux : <strong>~ ${calc.economies.toLocaleString("fr-FR")}&nbsp;€/an</strong></li>
+        ${calc.roi>0 ? `<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Retour sur investissement : <strong>${calc.roi} an${calc.roi>1?"s":""}</strong></li>` : `<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Retour sur investissement : <strong>immédiat</strong></li>`}
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Audit gratuit à domicile inclus</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aucun engagement avant validation</li>
       </ul>
 
       <p style="background:#fff8f1;border:1px dashed var(--orange-500);padding:.8rem;border-radius:10px;color:var(--ink-700);font-size:.93rem;margin:1rem 0">
@@ -1231,24 +1290,113 @@ function showResult(){
   document.getElementById("submit-btn").addEventListener("click", submitLead);
 }
 
-function estimateAids(){
-  let aids = 4000;
-  if(formData.surface>=100) aids+=2500;
-  if(formData.surface>=150) aids+=2000;
-  if(formData.chauffage==="gaz"||formData.chauffage==="fioul") aids+=3000;
-  if(formData.isolation==="mal") aids+=2500;
-  if(formData.revenus==="modeste") aids+=2500;
-  if(formData.construction==="avant1990") aids+=1500;
-  aids = Math.round(aids/100)*100;
+/* ============================================================
+   MOTEUR DE CALCUL DES AIDES — CEE 2026 + MaPrimeRénov'
+   Basé sur les barèmes en vigueur (BAR-EN-101 isolation combles,
+   BAR-TH-171 PAC air/eau, BAR-TH-148 ballon thermo)
+   + Coup de pouce Chauffage + bonification précarité énergétique
+   ============================================================ */
+function calculateAids(){
+  const d = formData;
+  const isMaison = d.type_logement === "maison" || d.type_logement === "mitoyenne";
+  const isApart  = d.type_logement === "appartement";
 
-  let savings = 1200;
-  if(formData.surface>=150) savings+=500;
-  if(formData.chauffage==="fioul") savings+=600;
-  if(formData.chauffage==="electrique") savings+=400;
-  if(formData.isolation==="mal") savings+=400;
+  // Coefficient zone climatique (impacte ampleur des travaux et bonification)
+  const zoneCoef = {H1:1.40, H2:1.20, H3:1.00}[d.zone_climatique] || 1.20;
 
-  const remaining = (formData.revenus==="modeste") ? "0 à 1 €" : "0 à quelques €";
-  return {aids, savings, remaining};
+  // Surface des combles à isoler (maison plain-pied ≈ surface au sol)
+  const surface = d.surface || 100;
+  const surfaceCombles = isMaison ? Math.round(surface * 0.80) : Math.round(surface * 0.35);
+
+  // Niveau de précarité (revenus) -> détermine barème CEE + MPR
+  const isModeste       = d.revenus === "modeste";
+  const isIntermediaire = d.revenus === "intermediaire";
+  const isSuperieur     = d.revenus === "superieur";
+
+  // Multiplicateur selon niveau d'isolation actuel
+  const isoCoef = {mal:1.00, moyen:0.65, bien:0.30, jenesaispas:0.80}[d.isolation] || 0.80;
+
+  // Bonus selon ancienneté (gisement d'économies)
+  const ancCoef = {avant1990:1.10, "1990-2010":1.00, "2010-2022":0.85}[d.construction] || 1.0;
+
+  // ===== 1️⃣ ISOLATION DES COMBLES (BAR-EN-101) =====
+  // CEE 2026 : ~12€/m² ménages modestes, ~10€/m² autres (avec bonification précarité)
+  const prixCEEparM2 = isModeste ? 12 : 10;
+  let aideIsolation = surfaceCombles * prixCEEparM2 * zoneCoef * isoCoef;
+  // MaPrimeRénov' isolation combles : forfait 7€/m² modeste, 0 sinon (depuis 2024)
+  if(isModeste) aideIsolation += surfaceCombles * 7 * isoCoef;
+  aideIsolation = Math.max(aideIsolation, 800); // plancher : au moins 800€ d'aide
+  aideIsolation = Math.round(aideIsolation/100)*100;
+
+  // ===== 2️⃣ POMPE À CHALEUR AIR/EAU (BAR-TH-171) =====
+  // Base CEE selon revenus
+  const baseCEEpac = isModeste?4500 : isIntermediaire?3000 : isSuperieur?2500 : 3000;
+  // MaPrimeRénov' PAC air/eau
+  const baseMPRpac = isModeste?5000 : isIntermediaire?3000 : isSuperieur?0 : 2500;
+  // Coup de pouce Chauffage si remplacement chaudière gaz/fioul/charbon
+  const coupDePouce = (d.chauffage==="gaz"||d.chauffage==="fioul")
+    ? (isModeste?4000 : 2500) : 0;
+  // Bonus selon chauffage actuel
+  const chauffageBonus = {gaz:1.00, fioul:1.15, electrique:0.95, pac:0.30, bois:0.65, autre:0.85}[d.chauffage] || 0.85;
+
+  let aidePAC = (baseCEEpac + baseMPRpac + coupDePouce) * zoneCoef * chauffageBonus * ancCoef;
+  // Plafond réaliste pour PAC : ne pas dépasser le coût d'installation moyen
+  aidePAC = Math.min(aidePAC, 17000);
+  aidePAC = Math.round(aidePAC/100)*100;
+
+  // ===== 3️⃣ BALLON THERMODYNAMIQUE (BAR-TH-148) =====
+  const baseCEEballon = isModeste?700 : 500;
+  const baseMPRballon = isModeste?400 : 0;
+  let aideBallon = (baseCEEballon + baseMPRballon) * zoneCoef;
+  aideBallon = Math.round(aideBallon/100)*100;
+
+  // ===== TOTAL AIDES =====
+  const aidesTotal = aideIsolation + aidePAC + aideBallon;
+
+  // ===== COÛT DES TRAVAUX =====
+  const coutIsolation = surfaceCombles * 30; // ~30€/m² installé
+  const coutPAC = 13500;
+  const coutBallon = 3200;
+  const coutTotal = coutIsolation + coutPAC + coutBallon;
+
+  // ===== RESTE À CHARGE =====
+  const resteCharge = Math.max(1, coutTotal - aidesTotal);
+  let resteChargeText;
+  if(resteCharge <= 1) resteChargeText = "1 €";
+  else if(resteCharge < 500) resteChargeText = `${Math.round(resteCharge/10)*10} €`;
+  else if(resteCharge < 3000) resteChargeText = `${Math.round(resteCharge/100)*100} €`;
+  else resteChargeText = `${Math.round(resteCharge/500)*500} €`;
+
+  // ===== ÉCONOMIES ANNUELLES =====
+  // Conso moyenne énergie chauffage selon DPE ressenti
+  const consoBaseKwh = surface * (d.isolation==="mal"?330 : d.isolation==="moyen"?230 : 150);
+  const prixKwh = {fioul:0.13, gaz:0.105, electrique:0.215, pac:0.05, bois:0.075, autre:0.13}[d.chauffage] || 0.13;
+  const factureActuelle = consoBaseKwh * prixKwh;
+  // -60% en moyenne après PAC + isolation + ballon thermo
+  const facturFuture = factureActuelle * 0.40;
+  let economies = factureActuelle - facturFuture;
+  economies = Math.max(900, Math.min(economies, 4200));
+  economies = Math.round(economies/50)*50;
+
+  // ===== ROI =====
+  const roi = resteCharge > 1 ? Math.ceil(resteCharge / economies) : 0;
+
+  return {
+    aides: aidesTotal,
+    detail: {
+      isolation: aideIsolation,
+      pac: aidePAC,
+      ballon: aideBallon
+    },
+    cout: Math.round(coutTotal/100)*100,
+    resteCharge: resteChargeText,
+    resteChargeRaw: resteCharge,
+    economies,
+    factureActuelle: Math.round(factureActuelle/50)*50,
+    roi,
+    zone: d.zone_climatique,
+    surfaceCombles
+  };
 }
 
 function renderBlocked(title, msg, ctaLabel){
