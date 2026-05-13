@@ -11,7 +11,30 @@
 <title>Bien Chez Soi — Isolation à 1€ avec les aides CEE 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://www.googletagmanager.com" />
+<link rel="preconnect" href="https://connect.facebook.net" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<!-- ===================== TRACKING IDs ===================== -->
+<script>
+  window.TRACKING_CONFIG = {
+    META_PIXEL_ID: "1496993831876670",
+    GTM_ID:        "GTM-TWRH6ZVT"
+  };
+  // Initialiser dataLayer tout de suite pour pouvoir push avant chargement GTM
+  window.dataLayer = window.dataLayer || [];
+  // Consent Mode v2 — par défaut tout est refusé jusqu'au consentement utilisateur
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied',
+    'functionality_storage': 'granted',
+    'security_storage': 'granted',
+    'wait_for_update': 500
+  });
+</script>
 <style>
 :root{
   --green-900:#0f4a23;
@@ -502,9 +525,38 @@ input[type=range]{width:100%;accent-color:var(--green-600);height:6px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+
+/* ===== Bandeau cookies CNIL-compliant ===== */
+.cookie-banner{
+  position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:200;
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:1.1rem 1.2rem;
+  box-shadow:0 16px 40px rgba(0,0,0,.18);
+  max-width:560px;margin:0 auto;
+  display:none;
+}
+.cookie-banner.show{display:block;animation:cookie-in .35s ease}
+@keyframes cookie-in{from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none}}
+.cookie-banner p{font-size:.9rem;color:var(--ink-700);margin:0 0 .8rem;line-height:1.5}
+.cookie-banner h4{font-size:1rem;margin:0 0 .4rem;color:var(--ink-900)}
+.cookie-banner a{color:var(--green-700);text-decoration:underline}
+.cookie-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.cookie-actions button{
+  flex:1;min-width:130px;
+  padding:.7rem 1rem;border-radius:var(--radius-pill);
+  font-family:inherit;font-weight:700;font-size:.92rem;cursor:pointer;
+  border:0;transition:all .15s;
+}
+.cookie-accept{background:var(--green-700);color:#fff}
+.cookie-accept:hover{background:var(--green-900)}
+.cookie-reject{background:#fff;color:var(--ink-700);border:1.5px solid var(--line) !important}
+.cookie-reject:hover{background:var(--green-50);border-color:var(--green-600) !important;color:var(--green-900)}
 </style>
 </head>
 <body>
+
+<!-- ===================== GTM noscript fallback ===================== -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TWRH6ZVT" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
 
 <!-- ============================ HEADER ============================ -->
 <header class="header">
@@ -836,7 +888,7 @@ input[type=range]{width:100%;accent-color:var(--green-600);height:6px}
         <a href="#mentions">Mentions légales</a>
         <a href="#cgv">CGV</a>
         <a href="#rgpd">Politique de confidentialité</a>
-        <a href="#cookies">Gestion des cookies</a>
+        <a href="#" onclick="event.preventDefault();localStorage.removeItem('bcs_consent');localStorage.removeItem('bcs_consent_exp');document.getElementById('cookie-banner').classList.add('show');">Gestion des cookies</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -848,6 +900,16 @@ input[type=range]{width:100%;accent-color:var(--green-600);height:6px}
 <!-- ============================ STICKY MOBILE CTA ============================ -->
 <div class="sticky-cta">
   <button class="btn btn-primary open-form-btn">Tester mon éligibilité gratuitement →</button>
+</div>
+
+<!-- ============================ COOKIE BANNER ============================ -->
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Bandeau de consentement aux cookies">
+  <h4>🍪 Cookies de mesure et publicitaires</h4>
+  <p>Nous utilisons des cookies pour mesurer l'audience de notre site et améliorer nos campagnes. Vous pouvez accepter ou refuser — votre choix est conservé pendant 6 mois.</p>
+  <div class="cookie-actions">
+    <button class="cookie-reject" id="cookie-reject" type="button">Refuser</button>
+    <button class="cookie-accept" id="cookie-accept" type="button">Accepter</button>
+  </div>
 </div>
 
 <!-- ============================ MODAL FORM ============================ -->
@@ -928,8 +990,8 @@ function openForm(prefill){
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
   renderStep(startStep);
-  // tracking — placeholder
-  try{ window.dataLayer && window.dataLayer.push({event:"form_open", entry:formData._entry||"button"}); }catch(_){}
+  // Event tracking
+  try{ window.fireEvent && window.fireEvent("form_open", {entry: (prefill && prefill._entry) || "button"}); }catch(_){}
 }
 function closeForm(){
   modal.classList.remove("open");
@@ -1430,11 +1492,17 @@ async function submitLead(){
     </div>
   `;
   setProgress(100);
-  try{
-    window.dataLayer && window.dataLayer.push({event:"lead_submitted", value:1});
-    window.gtag && window.gtag("event","conversion",{send_to:"AW-XXXXXX/YYYYYY"});
-    window.fbq && window.fbq("track","Lead");
-  }catch(_){}
+  // Event de conversion enrichi
+  fireEvent("lead_submitted", {
+    value: formData.calc_aides_total || 0,
+    currency: "EUR",
+    zone_climatique: formData.zone_climatique,
+    type_logement: formData.type_logement,
+    chauffage: formData.chauffage,
+    revenus: formData.revenus,
+    surface: formData.surface,
+    code_postal: formData.code_postal
+  });
 }
 
 async function sendLead(data){
@@ -1478,6 +1546,112 @@ document.addEventListener("mouseout", e=>{
 // expose
 window.goBack = goBack;
 window.closeForm = closeForm;
+
+/* ===========================================================
+   CONSENT MANAGER (CNIL) + Meta Pixel + Google Tag Manager
+   =========================================================== */
+(function(){
+  const STORAGE_KEY = "bcs_consent";       // valeurs : "accepted" | "rejected"
+  const STORAGE_EXP = "bcs_consent_exp";   // timestamp d'expiration (6 mois)
+  const SIX_MONTHS = 1000*60*60*24*30*6;
+
+  const banner = document.getElementById("cookie-banner");
+  const btnAccept = document.getElementById("cookie-accept");
+  const btnReject = document.getElementById("cookie-reject");
+
+  function getConsent(){
+    const c = localStorage.getItem(STORAGE_KEY);
+    const e = parseInt(localStorage.getItem(STORAGE_EXP)||"0", 10);
+    if(Date.now() > e) return null; // expiré -> redemander
+    return c;
+  }
+  function saveConsent(value){
+    localStorage.setItem(STORAGE_KEY, value);
+    localStorage.setItem(STORAGE_EXP, String(Date.now() + SIX_MONTHS));
+  }
+  function hideBanner(){ banner.classList.remove("show"); }
+  function showBanner(){ banner.classList.add("show"); }
+
+  function grantConsent(){
+    // Met à jour Consent Mode v2
+    gtag('consent', 'update', {
+      'ad_storage': 'granted',
+      'ad_user_data': 'granted',
+      'ad_personalization': 'granted',
+      'analytics_storage': 'granted'
+    });
+    loadGTM();
+    loadMetaPixel();
+  }
+
+  /* ===== Meta Pixel ===== */
+  function loadMetaPixel(){
+    if(window.fbq) return;
+    !function(f,b,e,v,n,t,s){
+      if(f.fbq) return; n=f.fbq=function(){n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments)};
+      if(!f._fbq) f._fbq=n; n.push=n; n.loaded=!0; n.version='2.0'; n.queue=[];
+      t=b.createElement(e); t.async=!0; t.src=v;
+      s=b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t,s);
+    }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', window.TRACKING_CONFIG.META_PIXEL_ID);
+    fbq('track', 'PageView');
+  }
+
+  /* ===== Google Tag Manager ===== */
+  function loadGTM(){
+    if(window._gtmLoaded) return;
+    window._gtmLoaded = true;
+    (function(w,d,s,l,i){
+      w[l]=w[l]||[]; w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+      var f=d.getElementsByTagName(s)[0], j=d.createElement(s), dl = l!='dataLayer'?'&l='+l:'';
+      j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+      f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer', window.TRACKING_CONFIG.GTM_ID);
+  }
+
+  /* ===== Wiring ===== */
+  btnAccept.addEventListener("click", ()=>{
+    saveConsent("accepted");
+    hideBanner();
+    grantConsent();
+  });
+  btnReject.addEventListener("click", ()=>{
+    saveConsent("rejected");
+    hideBanner();
+    // Pas de chargement, Consent Mode reste denied -> tags configurés en mode "consent: granted" ne tireront pas
+  });
+
+  // Auto sur visite récurrente
+  const consent = getConsent();
+  if(consent === "accepted") grantConsent();
+  else if(consent === null) setTimeout(showBanner, 800);
+})();
+
+/* ===========================================================
+   ÉVÉNEMENTS DE CONVERSION — câblage sur les actions du form
+   =========================================================== */
+function fireEvent(name, params){
+  params = params || {};
+  // dataLayer (GTM)
+  try{ window.dataLayer && window.dataLayer.push(Object.assign({event:name}, params)); }catch(_){}
+  // Meta Pixel
+  try{
+    if(window.fbq){
+      const fbName = {
+        form_open: "InitiateCheckout",
+        lead_blocked: "FindLocation",
+        lead_submitted: "Lead"
+      }[name];
+      if(fbName) window.fbq("track", fbName, {
+        value: params.value || 0,
+        currency: "EUR",
+        content_name: "Test eligibilite CEE 2026",
+        content_category: "Renovation energetique"
+      });
+    }
+  }catch(_){}
+}
+window.fireEvent = fireEvent;
 </script>
 
 </body>
