@@ -1108,6 +1108,8 @@ function renderChoices(field, options){
   container.querySelectorAll(".choice").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       formData[field] = btn.dataset.value;
+      // Event : étape complétée
+      try{ window.fireEvent && window.fireEvent("form_step_completed", {step_name:field, step_value:btn.dataset.value, step_index:currentStep+1}); }catch(_){}
       // Auto-advance
       setTimeout(()=>renderStep(currentStep+1), 180);
       container.querySelectorAll(".choice").forEach(b=>b.classList.remove("selected"));
@@ -1134,6 +1136,7 @@ function renderInput(field, label, placeholder, type, pattern, errMsg){
     }
     formData[field] = v;
     formData.zone_climatique = getClimateZone(v);
+    try{ window.fireEvent && window.fireEvent("form_step_completed", {step_name:field, step_value:v, zone:formData.zone_climatique, step_index:currentStep+1}); }catch(_){}
     if(formData.zone_climatique==="H3"){
       return renderH3Capture();
     }
@@ -1159,6 +1162,7 @@ function renderSlider(field, min, max, step, initial, suffix){
   slider.addEventListener("input", ()=>{ display.textContent = slider.value; });
   document.getElementById("next-btn").onclick = ()=>{
     formData[field] = parseInt(slider.value,10);
+    try{ window.fireEvent && window.fireEvent("form_step_completed", {step_name:field, step_value:formData[field], step_index:currentStep+1}); }catch(_){}
     renderStep(currentStep+1);
   };
 }
@@ -1195,6 +1199,7 @@ function renderFoyer(){
   document.getElementById("next-btn").onclick = ()=>{
     if(!formData.foyer){ showError("Indiquez le nombre de personnes"); return; }
     if(!formData.revenus){ showError("Indiquez votre tranche de revenus (ou choisissez « je préfère ne pas répondre »)"); return; }
+    try{ window.fireEvent && window.fireEvent("form_step_completed", {step_name:"foyer_revenus", foyer:formData.foyer, revenus:formData.revenus, step_index:currentStep+1}); }catch(_){}
     renderStep(currentStep+1);
   };
 }
@@ -1222,6 +1227,14 @@ function renderLoadingAndResult(){
 function showResult(){
   setProgress(100);
   const calc = calculateAids();
+  // Event : éligibilité affichée (CompleteRegistration sur Meta Pixel — étape clé du funnel)
+  try{ window.fireEvent && window.fireEvent("eligibility_shown", {
+    value: calc.aides,
+    zone: calc.zone,
+    surface: formData.surface,
+    chauffage: formData.chauffage,
+    revenus: formData.revenus
+  }); }catch(_){}
   // Stocke le calcul dans formData pour transmission au CRM
   formData.calc_aides_total      = calc.aides;
   formData.calc_aide_isolation   = calc.detail.isolation;
@@ -1421,10 +1434,12 @@ function renderBlocked(title, msg, ctaLabel){
       <p>${msg}</p>
       <div style="margin-top:1.4rem">
         <button class="btn btn-ghost" onclick="closeForm()" type="button">Fermer</button>
-        ${ctaLabel?`<a class="btn btn-primary" href="mailto:?subject=Aides CEE 2026&body=Découvre Bien Chez Soi : https://bienchezsoi.fr">${ctaLabel}</a>`:""}
+        ${ctaLabel?`<a class="btn btn-primary" href="mailto:?subject=Aides CEE 2026&body=Découvre Bien Chez Soi : https://spaceconseils.com">${ctaLabel}</a>`:""}
       </div>
     </div>
   `;
+  // Event : prospect non éligible (track reason for funnel analysis)
+  try{ window.fireEvent && window.fireEvent("form_blocked", {reason:title, type_logement:formData.type_logement||null, chauffage:formData.chauffage||null}); }catch(_){}
 }
 
 function renderH3Capture(){
@@ -1439,6 +1454,8 @@ function renderH3Capture(){
       <button class="btn btn-primary btn-block" id="wait-btn" type="button">M'inscrire à la liste d'attente</button>
     </div>
   `;
+  // Event : zone H3 — prospect hors zone
+  try{ window.fireEvent && window.fireEvent("lead_blocked_h3", {zone:"H3", code_postal:formData.code_postal||null}); }catch(_){}
   document.getElementById("wait-btn").addEventListener("click", async ()=>{
     const email = document.getElementById("email-wait").value.trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert("Email invalide"); return; }
@@ -1632,26 +1649,104 @@ window.closeForm = closeForm;
    =========================================================== */
 function fireEvent(name, params){
   params = params || {};
-  // dataLayer (GTM)
-  try{ window.dataLayer && window.dataLayer.push(Object.assign({event:name}, params)); }catch(_){}
-  // Meta Pixel
+  // dataLayer (GTM) — push toutes les data, GTM choisit ce qui tire
   try{
-    if(window.fbq){
-      const fbName = {
-        form_open: "InitiateCheckout",
-        lead_blocked: "FindLocation",
-        lead_submitted: "Lead"
-      }[name];
-      if(fbName) window.fbq("track", fbName, {
-        value: params.value || 0,
-        currency: "EUR",
-        content_name: "Test eligibilite CEE 2026",
-        content_category: "Renovation energetique"
-      });
-    }
+    window.dataLayer && window.dataLayer.push(Object.assign({
+      event: name,
+      page_path: location.pathname,
+      page_url: location.href
+    }, params));
+  }catch(_){}
+  // Meta Pixel — mapping vers événements standards
+  try{
+    if(!window.fbq) return;
+    const map = {
+      form_open:              "InitiateCheckout",
+      form_step_completed:    "CustomizeProduct",
+      eligibility_shown:      "CompleteRegistration",
+      phone_click:            "Contact",
+      lead_blocked_h3:        "FindLocation",
+      faq_opened:             "ViewContent",
+      scroll_depth_75:        "ViewContent",
+      lead_submitted:         "Lead"
+    };
+    const fbName = map[name];
+    if(!fbName) return;
+    // event_id pour déduplication future avec Conversions API (CAPI)
+    const eventID = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(36).slice(2));
+    const payload = {
+      value: params.value || 0,
+      currency: "EUR",
+      content_name: params.content_name || "Test eligibilite CEE 2026",
+      content_category: "Renovation energetique"
+    };
+    if(name === "form_step_completed") payload.content_name = "Etape: " + (params.step_name||"?");
+    if(name === "lead_blocked_h3")     payload.content_name = "Hors zone H1/H2";
+    if(name === "phone_click")         payload.content_name = "Clic telephone";
+    window.fbq("track", fbName, payload, {eventID});
   }catch(_){}
 }
 window.fireEvent = fireEvent;
+
+/* ===========================================================
+   ÉVÉNEMENTS COMPLÉMENTAIRES (phone, scroll, FAQ, CTA, exit)
+   =========================================================== */
+(function(){
+  // 1. Clic téléphone → Contact
+  document.querySelectorAll('a[href^="tel:"]').forEach(a=>{
+    a.addEventListener("click", ()=>fireEvent("phone_click", {phone: a.getAttribute("href").replace("tel:","")}));
+  });
+
+  // 2. Clic CTA (boutons "Tester mon éligibilité" et autres open-form)
+  document.querySelectorAll(".open-form-btn").forEach(b=>{
+    b.addEventListener("click", ()=>fireEvent("cta_click", {label: (b.textContent||"").trim().slice(0,60), location: b.closest("section,header,div.sticky-cta,div.cta-final")?.className||"unknown"}));
+  });
+
+  // 3. Clic sur un choix inline du hero
+  document.querySelectorAll(".hero-choice").forEach(b=>{
+    b.addEventListener("click", ()=>fireEvent("hero_choice_click", {value: b.dataset.quick}));
+  });
+
+  // 4. Scroll depth (25, 50, 75, 100 %)
+  const seen = {};
+  const checkScroll = ()=>{
+    const h = document.documentElement;
+    const pct = Math.round(((h.scrollTop + window.innerHeight) / h.scrollHeight) * 100);
+    [25,50,75,100].forEach(t=>{
+      if(pct >= t && !seen[t]){
+        seen[t] = true;
+        fireEvent("scroll_depth_"+t, {depth: t});
+      }
+    });
+  };
+  let scrollRaf;
+  window.addEventListener("scroll", ()=>{
+    if(scrollRaf) return;
+    scrollRaf = requestAnimationFrame(()=>{ scrollRaf=null; checkScroll(); });
+  }, {passive:true});
+
+  // 5. FAQ open
+  document.querySelectorAll(".faq-q").forEach(q=>{
+    q.addEventListener("click", ()=>{
+      const item = q.closest(".faq-item");
+      if(item && item.classList.contains("open")){
+        fireEvent("faq_opened", {question: (q.querySelector("span")?.textContent||"").trim().slice(0,80)});
+      }
+    });
+  });
+
+  // 6. Temps passé : 30s et 60s
+  setTimeout(()=>fireEvent("time_on_page_30s", {seconds:30}), 30000);
+  setTimeout(()=>fireEvent("time_on_page_60s", {seconds:60}), 60000);
+
+  // 7. Tentative de sortie (exit intent) — un seul push
+  let exitFired = false;
+  document.addEventListener("mouseout", e=>{
+    if(exitFired || e.clientY > 0) return;
+    exitFired = true;
+    fireEvent("exit_intent_shown", {});
+  });
+})();
 </script>
 
 </body>
