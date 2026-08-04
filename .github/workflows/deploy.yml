@@ -1,0 +1,28 @@
+name: Déploiement (Hetzner)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-bien-chez-soi
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Clé SSH restreinte côté serveur (forced command) : le secret CI ne
+      # permet pas d'ouvrir un shell.
+      #
+      # contact.php est exclu de la synchronisation : c'est un handler
+      # server-side absent du dépôt, qu'un --delete supprimerait.
+      - name: Déclencher le déploiement
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          command_timeout: 10m
+          script: deploy
